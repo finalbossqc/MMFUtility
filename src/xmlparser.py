@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 from typing import Dict, Optional, Tuple
-
+import sys
 
 class VoxelModelParser:
     """Parser for voxelized biological model XML files."""
@@ -160,28 +160,11 @@ def parse_voxel_xml(xml_file_path: str) -> Dict[int, str]:
 
 # Example usage
 if __name__ == "__main__":
-    # Example XML content (your provided sample)
-    sample_xml = '''<!DOCTYPE TissueMeshData SYSTEM "TissueMeshData.dtd">
-<TissueMeshData Name="AF 'man' Mesh- 1mm" FileName="af_man_1mm.raw.gz" DataType="Raw" >
-    <MeshData XCount="586" YCount="340" ZCount="1878" >
-        <Resolution X="1" Y="1" Z="1" Units="mm" />
-    </MeshData>
-    <TissueData Count="39" >
-        <Tissue Name="bile" Value="2" Visible="Yes" Color="4718592" Density="1010.000000" VoxelCount="18991" UserData="17" Priority="10" />
-        <Tissue Name="body fluid" Value="3" Visible="Yes" Color="7143424" Density="1010.000000" VoxelCount="369213" UserData="32" Priority="22" />
-        <Tissue Name="eye cornea" Value="4" Visible="Yes" Color="9502720" Density="1076.000000" VoxelCount="239" UserData="36" Priority="3" />
-        <Tissue Name="fat" Value="5" Visible="Yes" Color="11927552" Density="916.000000" VoxelCount="33374895" UserData="4" Priority="37" />
-        <Tissue Name="lymph" Value="6" Visible="Yes" Color="14286848" Density="1040.000000" VoxelCount="63164" UserData="40" Priority="12" />
-        <Tissue Name="mucous membrane" Value="7" Visible="Yes" Color="16711680" Density="1040.000000" VoxelCount="460314" UserData="34" Priority="25" />
-        <Tissue Name="toe and finger nails" Value="8" Visible="Yes" Color="21760" Density="1030.000000" VoxelCount="3115" UserData="37" Priority="5" />
-        <Tissue Name="nerve spine" Value="11" Visible="Yes" Color="7165184" Density="1038.000000" VoxelCount="347713" UserData="15" Priority="2" />
-        <Tissue Name="muscle" Value="17" Visible="Yes" Color="2402816" Density="1046.900024" VoxelCount="42815299" UserData="8" Priority="38" />
-    </TissueData>
-</TissueMeshData>'''
+    xml = sys.argv[1]
     
     # Parse the sample XML
     parser = VoxelModelParser()
-    tissue_mapping = parser.parse_string(sample_xml)
+    tissue_mapping = parser.parse_string(xml)
     
     # Print results
     print("Voxel value to tissue mapping:")

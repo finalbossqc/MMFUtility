@@ -25,10 +25,10 @@ class VoxelDataParser:
     
     def __init__(self):
         self.mesh_info = {}
-        self.tissue_mapping = {}
-        self.tissue_details = {}
+        self.tissue_mapping = {} # Maps tissue_value (int) to tissue_name (str)
+        self.tissue_details = {} # Maps tissue_value (int) to dict of details
         self.voxel_data = None
-        self.voxel_tissue_map = {}
+        self.voxel_tissue_map = {} # Maps (x,y,z) tuple to tissue_name (str)
     
     def parse_xml_metadata(self, xml_file_path: str) -> Dict:
         """Parse XML metadata file."""
@@ -64,10 +64,10 @@ class VoxelDataParser:
                     name = tissue.get('Name')
                     value = int(tissue.get('Value'))
                     
-                    # Store basic mapping
+                    # Store basic mapping (value to name)
                     self.tissue_mapping[value] = name
                     
-                    # Store detailed information
+                    # Store detailed information (value to details dict)
                     self.tissue_details[value] = {
                         'name': name,
                         'value': value,
@@ -138,7 +138,7 @@ class VoxelDataParser:
         Create dictionary mapping voxel coordinates to tissue names and optionally save to a file.
 
         Args:
-            filename (str, optional): Base name for the output file. If provided, the mapping
+            filename (str, optional): Base name for the output text file. If provided, the mapping
                                       will be saved to '{filename}.mapping.out'. Defaults to None.
 
         Returns:
@@ -158,7 +158,6 @@ class VoxelDataParser:
         # Iterate through all voxels
         for z in range(z_count):
             if z % 100 == 0:  # Progress indicator
-                # Using 8 spaces to match the existing style in the provided script
                 print(f"        Processing slice {z}/{z_count}") 
             
             for y in range(y_count):
@@ -170,16 +169,16 @@ class VoxelDataParser:
                         tissue_name = self.tissue_mapping.get(tissue_value, f"Unknown_{tissue_value}")
                         voxel_tissue_map[(x, y, z)] = tissue_name
         
-        self.voxel_tissue_map = voxel_tissue_map
+        self.voxel_tissue_map = voxel_tissue_map # Store map with names
         print(f"✓ Created mapping for {len(voxel_tissue_map):,} non-empty voxels")
 
-        # Save the mapping to a file if filename is provided
+        # Save the mapping to a text file if filename is provided (outputs with names)
         if filename:
-            output_filepath = f"{filename}"
+            output_filepath = f"{filename}.mapping.out" # Ensure .mapping.out extension for text file
             try:
                 with open(output_filepath, 'w') as f:
-                    for coord, tissue in voxel_tissue_map.items():
-                        f.write(f"({coord[0]}, {coord[1]}, {coord[2]}): {tissue}\n")
+                    for coord, tissue_name in voxel_tissue_map.items(): # Iterate over names
+                        f.write(f"({coord[0]}, {coord[1]}, {coord[2]}): {tissue_name}\n")
                 print(f"✓ Voxel tissue mapping saved to '{output_filepath}'")
             except IOError as e:
                 print(f"Error saving mapping to file '{output_filepath}': {e}")
@@ -212,7 +211,10 @@ class VoxelDataParser:
         return stats
     
     def save_results(self, output_file: str, include_coordinates: bool = False):
-        """Save parsing results to JSON file."""
+        """
+        Save parsing results to JSON file.
+        If include_coordinates is True, voxel coordinates will be stored with tissue IDs.
+        """
         results = {
             'metadata': {
                 'mesh_info': self.mesh_info,
@@ -222,10 +224,20 @@ class VoxelDataParser:
             'statistics': self.get_tissue_statistics()
         }
         
-        if include_coordinates and self.voxel_tissue_map:
-            # Convert coordinate tuples to strings for JSON serialization
-            coord_mapping = {f"{x},{y},{z}": tissue for (x, y, z), tissue in self.voxel_tissue_map.items()}
-            results['voxel_coordinates'] = coord_mapping
+        # --- MODIFIED: Include voxel coordinates with tissue IDs for JSON output ---
+        if include_coordinates and self.voxel_data is not None: 
+            print("  Including voxel coordinates by ID in JSON output...")
+            coord_mapping_by_id = {}
+            z_count, y_count, x_count = self.voxel_data.shape
+            for z in range(z_count):
+                for y in range(y_count):
+                    for x in range(x_count):
+                        tissue_id = int(self.voxel_data[z, y, x]) 
+                        # Only include non-empty/air voxels (value > 1) for consistency
+                        if tissue_id > 1:
+                            coord_mapping_by_id[f"{x},{y},{z}"] = tissue_id # Store ID number
+            results['voxel_coordinates'] = coord_mapping_by_id
+        # -------------------------------------------------------------------------
         
         with open(output_file, 'w') as f:
             json.dump(results, f, indent=2)
@@ -275,17 +287,18 @@ Examples:
   python voxel_parser.py metadata.xml data.raw
   python voxel_parser.py af_man_1mm.xml af_man_1mm.raw --output results.json
   python voxel_parser.py metadata.xml data.raw --coords --output full_data.json
+  python voxel_parser.py metadata.xml data.raw --mapping my_output_map
         """
     )
     
     parser.add_argument('xml_file', help='Path to XML metadata file')
     parser.add_argument('raw_file', help='Path to binary voxel data file')
-    parser.add_argument('-o', '--output', help='Output JSON file path')
+    parser.add_argument('-o', '--output', help='Output JSON file path for full results (e.g., results.json)')
     parser.add_argument('--coords', action='store_true', 
-                        help='Include voxel coordinates in output (warning: large file)')
+                        help='Include voxel coordinates (by ID) in output JSON (warning: can create very large files)')
     parser.add_argument('--stats-only', action='store_true',
                         help='Only generate statistics, skip coordinate mapping')
-    parser.add_argument('-m', '--mapping', help="Output mapping file path (e.g., 'my_output' will save to 'my_output.mapping.out')")
+    parser.add_argument('-m', '--mapping', help="Output text-based mapping file path (e.g., 'my_output_map' will save to 'my_output_map.mapping.out').")
     args = parser.parse_args()
     
     try:
@@ -301,22 +314,23 @@ Examples:
         voxel_parser.load_binary_voxel_data(args.raw_file)
         
         # Create coordinate mapping (unless stats-only), passing the mapping filename if provided
-        if not args.stats_only:
+        # This step populates self.voxel_tissue_map (with names) and optionally writes the .mapping.out file
+        if not args.stats_only: 
             print("\nStep 3: Creating voxel-to-tissue mapping...")
-            # Corrected method call and added filename argument
             voxel_parser.get_voxel_tissue_mapping(filename=args.mapping)
         
         # Print summary
         voxel_parser.print_summary()
         
         # Save results if output file specified
+        # This will now include IDs for voxel_coordinates if --coords is used
         if args.output:
             print(f"\nStep 4: Saving results...")
             voxel_parser.save_results(args.output, include_coordinates=args.coords)
         
         print(f"\n✓ Processing complete!")
         
-        # Show example usage
+        # Show example usage (uses the internally stored voxel_tissue_map with names)
         if not args.stats_only:
             print(f"\nExample: Access tissue at coordinate (100, 50, 200):")
             if (100, 50, 200) in voxel_parser.voxel_tissue_map:
