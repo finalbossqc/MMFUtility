@@ -2,7 +2,7 @@ The .mmf file format is used to represent segmented voxelized models. This repo 
 
 To use the scripts, first clone the repo
 
-```git clone  ```
+```git clone https://github.com/finalbossqc/MMFUtility.git```
 
 cd into the repository
 
