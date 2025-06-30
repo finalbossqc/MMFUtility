@@ -284,10 +284,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python voxel_parser.py metadata.xml data.raw
-  python voxel_parser.py af_man_1mm.xml af_man_1mm.raw --output results.json
-  python voxel_parser.py metadata.xml data.raw --coords --output full_data.json
-  python voxel_parser.py metadata.xml data.raw --mapping my_output_map
+  python extractraw.py metadata.xml data.raw
+  python extractraw.py af_man_1mm.xml af_man_1mm.raw --output results.json
+  python extractraw.py metadata.xml data.raw --coords --output full_data.json
+  python extractraw.py metadata.xml data.raw --mapping my_output_map
         """
     )
     
