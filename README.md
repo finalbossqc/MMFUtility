@@ -22,4 +22,4 @@ and
 
 Simply run the bash script ```extract.sh```
 
-```bash extract.sh <model>```
+```bash scripts/extract.sh <model>```
