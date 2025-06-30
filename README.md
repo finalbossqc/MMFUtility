@@ -8,18 +8,14 @@ cd into the repository
 
 ```cd ./MMFUtility```
 
-and create a new directory called BioModels
+The .mmf format consists of a metadata file (.mmf) along with a raw data file (.raw or .raw.gz or some other compressed format). If the .raw file is gzipped, use ```src/unzip.py``` to unzip the archive or do it manually.
 
-```mkdir BioModels```
+```python3 src/unzip.py <rawdata>.raw.gz```
 
-Inside this directory is where you will put your .mmf file and the accompanying gzipped raw data. Suppose that we have the files
+Then use the ```extractraw.py``` to transform the raw data into a json file.
 
-```BioModels/<model>.mmf```
+```python3 src/extractraw.py <metadata>.mmf <rawdata>.raw.gz --output <outputdir>.json```
 
-and
+Include the ```--coords``` flag if you want to have the voxel coordinates and mappings in ```<outputdir>.json```
 
-```BioModels/<model>.raw.gz```
-
-Simply run the bash script ```extract.sh```
-
-```bash scripts/extract.sh <model>```
+```python3 src/extractraw.py <metadata>.mmf <rawdata>.raw.gz --output <outputdir>.json --coords```
